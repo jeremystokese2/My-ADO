@@ -61,9 +61,25 @@ src/
 ## Scripts
 
 - `npm run dev` – start Vite in development mode
-- `npm run build` – type-check and bundle the application
+- `npm run build` – type-check, bundle the application, and copy `dist/index.html` to `dist/404.html` for GitHub Pages routing support
 - `npm run preview` – preview the production build locally
 - `npm run lint` – run ESLint using the provided config
+
+## Deployment
+
+The repository includes a GitHub Actions workflow (`.github/workflows/deploy-pages.yml`) that builds the frontend and publishes it to GitHub Pages at `https://jeremystokese2.github.io/My-ADO/`.
+
+1. Ensure the `main` branch contains the latest changes.
+2. Push to `main` (or trigger the workflow manually) to run the deployment pipeline.
+3. In the repository settings, enable Pages and choose “GitHub Actions” as the source.
+
+The workflow builds with the Azure DevOps defaults:
+
+- Organization: `engagesq`
+- Project: `Brief Connect`
+- API base URL: `https://dev.azure.com/engagesq`
+
+If you need to override these values, edit the `Build frontend` step in the workflow to source them from repository secrets.
 
 ## License
 
