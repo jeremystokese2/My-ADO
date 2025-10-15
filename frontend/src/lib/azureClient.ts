@@ -51,7 +51,49 @@ export interface WorkItemDetailResult {
 }
 
 function getBaseUrl(auth: AuthState) {
-  return `${auth.apiBaseUrl.replace(/\/$/, '')}/${auth.organization}/${auth.project}`
+  const trimmedBase = auth.apiBaseUrl.replace(/\/+$|\s+$/g, '')
+  const organization = auth.organization.trim()
+  const project = auth.project.trim()
+
+  if (!organization || !project) {
+    return trimmedBase
+  }
+
+  try {
+    const url = new URL(trimmedBase)
+    const decodedSegments = url.pathname
+      .split('/')
+      .filter(Boolean)
+      .map((segment) => decodeURIComponent(segment))
+    const normalizedSegments = decodedSegments.map((segment) => segment.toLowerCase())
+    const orgLower = organization.toLowerCase()
+    const projectLower = project.toLowerCase()
+
+    let finalSegments: string[]
+
+    if (
+      normalizedSegments.length >= 2 &&
+      normalizedSegments[normalizedSegments.length - 2] === orgLower &&
+      normalizedSegments[normalizedSegments.length - 1] === projectLower
+    ) {
+      finalSegments = decodedSegments
+    } else if (
+      normalizedSegments.length >= 1 &&
+      normalizedSegments[normalizedSegments.length - 1] === orgLower
+    ) {
+      finalSegments = [...decodedSegments, project]
+    } else {
+      finalSegments = [...decodedSegments, organization, project]
+    }
+
+    const path = finalSegments.map((segment) => encodeURIComponent(segment)).join('/')
+    return `${url.origin}/${path}`
+  } catch (error) {
+    console.warn('Failed to normalize Azure DevOps base URL, falling back to string concatenation', error)
+    const normalizedBase = trimmedBase.replace(/\/+$|\s+$/g, '')
+    const prefix = normalizedBase ? `${normalizedBase.replace(/\/$/, '')}/` : ''
+    return `${prefix}${encodeURIComponent(organization)}/${encodeURIComponent(project)}`
+  }
 }
 
 function getHeaders(pat: string) {
