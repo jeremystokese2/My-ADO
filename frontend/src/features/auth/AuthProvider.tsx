@@ -4,27 +4,38 @@ import { AuthContext, defaultAuthState } from './AuthContext'
 import type { AuthContextValue, AuthState } from './AuthContext'
 
 const STORAGE_KEY = 'ado-mobile-auth'
+const STORAGE_DEFAULTS_KEY = `${STORAGE_KEY}-defaults`
+
+const ENV_DEFAULTS: Pick<AuthState, 'organization' | 'project' | 'apiBaseUrl'> = {
+  organization: import.meta.env.VITE_AZDO_ORG ?? defaultAuthState.organization,
+  project: import.meta.env.VITE_AZDO_PROJECT ?? defaultAuthState.project,
+  apiBaseUrl: import.meta.env.VITE_AZDO_API_BASE ?? defaultAuthState.apiBaseUrl,
+}
+
+const DEFAULTS_SIGNATURE = JSON.stringify(ENV_DEFAULTS)
 
 function loadInitialState(): AuthState {
   if (typeof window === 'undefined') {
-    return defaultAuthState
+    return { ...defaultAuthState, ...ENV_DEFAULTS }
   }
+
+  const storedDefaults = localStorage.getItem(STORAGE_DEFAULTS_KEY)
+  if (storedDefaults !== DEFAULTS_SIGNATURE) {
+    localStorage.setItem(STORAGE_DEFAULTS_KEY, DEFAULTS_SIGNATURE)
+    return { ...defaultAuthState, ...ENV_DEFAULTS }
+  }
+
   const stored = localStorage.getItem(STORAGE_KEY)
   if (stored) {
     try {
       const parsed = JSON.parse(stored) as AuthState
-      return { ...defaultAuthState, ...parsed }
+      return { ...defaultAuthState, ...ENV_DEFAULTS, ...parsed }
     } catch (error) {
       console.warn('Failed to parse auth state from storage', error)
     }
   }
 
-  return {
-    ...defaultAuthState,
-    organization: import.meta.env.VITE_AZDO_ORG ?? defaultAuthState.organization,
-    project: import.meta.env.VITE_AZDO_PROJECT ?? defaultAuthState.project,
-    apiBaseUrl: import.meta.env.VITE_AZDO_API_BASE ?? defaultAuthState.apiBaseUrl,
-  }
+  return { ...defaultAuthState, ...ENV_DEFAULTS }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -33,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+      localStorage.setItem(STORAGE_DEFAULTS_KEY, DEFAULTS_SIGNATURE)
     }
   }, [state])
 
