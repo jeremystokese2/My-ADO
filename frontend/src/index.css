@@ -173,6 +173,11 @@ button:disabled {
   color: var(--primary);
   padding: 0.25rem 0.5rem;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  flex-shrink: 0;
 }
 
 .auth-screen {
